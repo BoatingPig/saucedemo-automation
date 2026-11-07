@@ -1,0 +1,10 @@
+case_name,username,password,expected
+正常登录,standard_user,secret_sauce,
+账号锁定,locked_out_user,secret_sauce,locked out
+密码错误,standard_user,wrong_pass,do not match
+用户名为空,,secret_sauce,Username is required
+密码为空,standard_user,,Password is required
+账号含空格," standard_user ",secret_sauce,do not match
+密码含空格,standard_user," secret_sauce ",do not match
+账号大小写敏感,STANDARD_USER,secret_sauce,do not match
+密码大小写敏感,standard_user,SECRET_SAUCE,do not match
