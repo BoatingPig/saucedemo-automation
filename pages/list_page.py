@@ -20,7 +20,13 @@ class ListPage(BasePage):
 
     CART_BUTTON = (By.CSS_SELECTOR, '[data-test="shopping-cart-link"]')
 
+    CART_BADGE = (By.CSS_SELECTOR, '[data-test="shopping-cart-badge"]')
+
     SORT_SELECT = (By.CSS_SELECTOR, '[data-test="product-sort-container"]')
+
+    ADD_BTN_TEXT = "Add to cart"
+
+    REMOVE_BTN_TEXT = "Remove"
 
     # def __init__(self, driver):
     #     self.driver = driver
@@ -116,6 +122,48 @@ class ListPage(BasePage):
             return all(title1 >= title2 for title1,title2 in zip(target_list, target_list[1:]))
         else:
             raise AssertionError("sort order,order parameter error")
+
+
+    def cart_count(self):
+        badges = self.driver.find_elements(*self.CART_BADGE)
+        if badges:
+            return int(badges[0].text)
+        else:
+            return 0
+
+
+    def wait_cart_count(self, expected):
+        self.wait.until(
+            lambda d: self.cart_count() == expected,
+            message=f"购物车角标没有变成 {expected}",
+        )
+
+    def add_to_cart(self, title):
+        # 找到商品对应的card，然后点他的button
+        # 根据title去拼接名字
+        expected = self.cart_count() + 1
+        add_locator = (By.CSS_SELECTOR, f'[data-test="add-to-cart-{title.lower().replace(" ", "-")}"]')
+        self._click(add_locator)
+        self.wait_cart_count(expected)
+
+    def remove_from_cart(self, title):
+        expected = self.cart_count() - 1
+        remove_locator = (By.CSS_SELECTOR, f'[data-test="remove-{title.lower().replace(" ", "-")}"]')
+        print(str(remove_locator))
+        self._click(remove_locator)
+        self.wait_cart_count(expected)
+
+    def check_button_text(self, title, order="add"):
+        if order == "add":
+            locator = (By.CSS_SELECTOR, f'[data-test="add-to-cart-{title.lower().replace(" ", "-")}"]')
+        elif order == "remove":
+            locator = (By.CSS_SELECTOR, f'[data-test="remove-{title.lower().replace(" ", "-")}"]')
+        else:
+            return False
+        print(str(locator))
+        btn_text = self._text(locator)
+
+        return order in btn_text.lower()
 
             
 

@@ -9,6 +9,7 @@ from pages.list_page import ListPage
 
 DEFAULT_USERNAME = "standard_user"
 DEFAULT_PASSWORD = "secret_sauce"
+DEFAULT_PRODUCT_TITLE = "Sauce Labs Backpack"
 
 @pytest.fixture
 def driver():
@@ -33,3 +34,20 @@ def logged_in_driver(driver):
     list_page.wait_loaded()
     
     return driver
+
+@pytest.fixture
+def cart_had_product_driver(logged_in_driver):
+    list_page = ListPage(logged_in_driver)
+    
+    before_cart_count = list_page.cart_count()
+        
+    list_page.add_to_cart(DEFAULT_PRODUCT_TITLE)
+    
+    after_cart_count = list_page.cart_count()
+    
+        # 点击之后，断言
+    assert after_cart_count - before_cart_count == 1
+    assert list_page.check_button_text(DEFAULT_PRODUCT_TITLE, "remove")
+    return logged_in_driver
+    
+    
