@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
 from pages.login_page import LoginPage
 from pages.list_page import ListPage
+from data.expected_products import EXPECTED_PRODUCTS
 
 # 基础冒烟：
 # 1.登录后正常跳转，inventory.html 在 URL 中
@@ -10,14 +11,7 @@ from pages.list_page import ListPage
 # 4.购物车图片可点击，点击后进入 /cart.html
 
 
-EXPECTED_PRODUCTS = [
-    ("Sauce Labs Backpack",                 "$29.99"),
-    ("Sauce Labs Bike Light",               "$9.99"),
-    ("Sauce Labs Bolt T-Shirt",             "$15.99"),
-    ("Sauce Labs Fleece Jacket",            "$49.99"),
-    ("Sauce Labs Onesie",                   "$7.99"),
-    ("Test.allTheThings() T-Shirt (Red)",   "$15.99"),
-]
+
 
 CARDS_COUNT = 6
 

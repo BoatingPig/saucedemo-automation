@@ -1,6 +1,8 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.ui import Select
+
 
 class BasePage:
     def __init__(self, driver):
@@ -32,3 +34,10 @@ class BasePage:
     def _get_all_element(self, locator):
         elements = self.wait.until(expected_conditions.visibility_of_all_elements_located(locator))
         return elements
+
+    def _click_select_value(self, locator, value):
+        #等待-获取选择框-弄成对象-点击其中的选项
+        element = self.wait.until(expected_conditions.visibility_of_element_located(locator))
+        sort_select = Select(element)
+        sort_select.select_by_value(value)
+        

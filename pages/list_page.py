@@ -2,7 +2,7 @@ from pages.base_page import BasePage
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
-
+from data.expected_products import EXPECTED_PRODUCTS
 
 class ListPage(BasePage):
 
@@ -19,6 +19,8 @@ class ListPage(BasePage):
     CARD = (By.CSS_SELECTOR, '[data-test="inventory-item"]')
 
     CART_BUTTON = (By.CSS_SELECTOR, '[data-test="shopping-cart-link"]')
+
+    SORT_SELECT = (By.CSS_SELECTOR, '[data-test="product-sort-container"]')
 
     # def __init__(self, driver):
     #     self.driver = driver
@@ -77,7 +79,46 @@ class ListPage(BasePage):
             #arguments[0]相当于一个占位符，转成js后img会放到其中 => img.complete
               all(d.execute_script("return arguments[0].complete", img) for img in imges)
         )
+
+    def click_sort_select_value(self, value):
+        titles_before = self.get_all_products_title()
+        self._click_select_value(self.SORT_SELECT, value)
+        self.wait.until(
+        lambda d: self.get_all_products_title() != titles_before,
+        message=f"选择排序 {value} 后商品列表顺序没有变化",
+    )
+
+    def check_sort_products(self, products_list, target="title", order="asc"):
+        #判断排序方式
         
+        products_title_price_list = [(item[0], item[1]) for item in products_list]
+        expected_products = dict(EXPECTED_PRODUCTS)
+
+        #现在商品名对应价格和期望表里的同一个商品名拿到的价格是一致的
+        
+        if not all(item[1] == expected_products[item[0]] for item in products_title_price_list):
+            raise AssertionError("product's price is not expected")
+        
+        if target == "title":
+            target_list = [(item[0]) for item in products_list]
+        elif target == "price":
+            #需要拆成浮点数的再比较
+            target_list = [float((item[1]).replace("$","")) for item in products_list]
+        else:
+             raise AssertionError("sort order,target parameter error")
+
+        #升序
+        if order == "asc":
+            #确保商品名排序是升序
+            return all(title1 <= title2 for title1,title2 in zip(target_list, target_list[1:]))
+        elif order == "desc":
+            #确保商品名排序是降序
+            return all(title1 >= title2 for title1,title2 in zip(target_list, target_list[1:]))
+        else:
+            raise AssertionError("sort order,order parameter error")
+
+            
+
 
     
 
