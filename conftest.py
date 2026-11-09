@@ -47,7 +47,7 @@ def cart_had_product_driver(logged_in_driver):
     
         # 点击之后，断言
     assert after_cart_count - before_cart_count == 1
-    assert list_page.check_button_text(DEFAULT_PRODUCT_TITLE, "remove")
+    assert list_page.button_text(DEFAULT_PRODUCT_TITLE, "remove") == ListPage.REMOVE_BTN_TEXT
     return logged_in_driver
     
     

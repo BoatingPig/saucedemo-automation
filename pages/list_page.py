@@ -12,8 +12,6 @@ class ListPage(BasePage):
 
     PRODUCT_PRICE = (By.CSS_SELECTOR, '[data-test="inventory-item-price"]')
 
-    PRODUCT_ITEM = (By.CSS_SELECTOR, '[data-test="inventory-item"]')
-
     PRODUCT_IMG = (By.TAG_NAME, "img")
 
     CARD = (By.CSS_SELECTOR, '[data-test="inventory-item"]')
@@ -41,14 +39,13 @@ class ListPage(BasePage):
         return list
 
     def get_all_products_title_and_price_and_img(self):
-        elemensts_item = self._get_all_element(self.PRODUCT_ITEM)
+        elements_item = self._get_all_element(self.CARD)
         #用一个列表，里装元组，把标题和价格放一起
         list = []
         #拿到商品卡片item，里面包括价格和标题的元素
         #想让这个卡片item作为父元素，在其中找标题和价格，这样就可以认为他们是同一个商品下的
         #已经拿到了卡片元素，里面的子元素应该就不用wait了
-        for item in elemensts_item:
-            # print(elemensts_item[0].get_attribute("outerHTML"))
+        for item in elements_item:
             price_element = item.find_element(*self.PRODUCT_PRICE)
             raw_price = price_element.text
             price = raw_price.replace("\n", "")
@@ -149,24 +146,30 @@ class ListPage(BasePage):
     def remove_from_cart(self, title):
         expected = self.cart_count() - 1
         remove_locator = (By.CSS_SELECTOR, f'[data-test="remove-{title.lower().replace(" ", "-")}"]')
-        print(str(remove_locator))
         self._click(remove_locator)
         self.wait_cart_count(expected)
 
-    def check_button_text(self, title, order="add"):
+    def button_text(self, title, order="add"):
         if order == "add":
             locator = (By.CSS_SELECTOR, f'[data-test="add-to-cart-{title.lower().replace(" ", "-")}"]')
         elif order == "remove":
             locator = (By.CSS_SELECTOR, f'[data-test="remove-{title.lower().replace(" ", "-")}"]')
         else:
-            return False
-        print(str(locator))
+            return None
         btn_text = self._text(locator)
 
-        return order in btn_text.lower()
+        return btn_text
 
-            
+    #获取列表页面中已在购物车的商品
+    def get_card_product_from_page(self):
+        products_list = self.get_all_products_title_and_price_and_img()
+        products_in_cart_list = []
+        for item in products_list:
+            locator = (By.CSS_SELECTOR, f'[data-test="remove-{item[0].lower().replace(" ", "-")}"]')
+            if self.driver.find_elements(*locator):
+                products_in_cart_list.append((item[0], item[1]))
 
+        return products_in_cart_list
 
     
 
