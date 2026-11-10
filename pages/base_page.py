@@ -5,6 +5,9 @@ from selenium.webdriver.support.ui import Select
 
 
 class BasePage:
+
+    CART_BADGE = (By.CSS_SELECTOR, '[data-test="shopping-cart-badge"]')
+    
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(driver, 10)
@@ -40,4 +43,17 @@ class BasePage:
         element = self.wait.until(expected_conditions.visibility_of_element_located(locator))
         sort_select = Select(element)
         sort_select.select_by_value(value)
+
+    def cart_count(self):
+        badges = self.driver.find_elements(*self.CART_BADGE)
+        if badges:
+            return int(badges[0].text)
+        else:
+            return 0
+
+    def wait_cart_count(self, expected):
+        self.wait.until(
+            lambda d: self.cart_count() == expected,
+            message=f"购物车角标没有变成 {expected}",
+        )
         

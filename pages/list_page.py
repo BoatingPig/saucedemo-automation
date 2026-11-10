@@ -18,8 +18,6 @@ class ListPage(BasePage):
 
     CART_BUTTON = (By.CSS_SELECTOR, '[data-test="shopping-cart-link"]')
 
-    CART_BADGE = (By.CSS_SELECTOR, '[data-test="shopping-cart-badge"]')
-
     SORT_SELECT = (By.CSS_SELECTOR, '[data-test="product-sort-container"]')
 
     ADD_BTN_TEXT = "Add to cart"
@@ -70,6 +68,11 @@ class ListPage(BasePage):
     def go_to_cart(self):
         self._click(self.CART_BUTTON)
         self.wait.until(expected_conditions.url_contains("cart.html"))
+        # 前端路由会先把 URL 改掉、再渲染新页面，所以 URL 对了不等于 DOM 换完了。
+        # 不等这个元素，紧接着读购物车行数有可能读到列表页的 6 张卡片。
+        self.wait.until(
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, '[data-test="cart-list"]'))
+        )
 
     def wait_img_loaded(self, imges):
         #需要等到页面的图片加载
@@ -119,21 +122,6 @@ class ListPage(BasePage):
             return all(title1 >= title2 for title1,title2 in zip(target_list, target_list[1:]))
         else:
             raise AssertionError("sort order,order parameter error")
-
-
-    def cart_count(self):
-        badges = self.driver.find_elements(*self.CART_BADGE)
-        if badges:
-            return int(badges[0].text)
-        else:
-            return 0
-
-
-    def wait_cart_count(self, expected):
-        self.wait.until(
-            lambda d: self.cart_count() == expected,
-            message=f"购物车角标没有变成 {expected}",
-        )
 
     def add_to_cart(self, title):
         # 找到商品对应的card，然后点他的button

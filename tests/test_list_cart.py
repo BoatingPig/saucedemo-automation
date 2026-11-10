@@ -4,8 +4,6 @@ from data.expected_products import EXPECTED_PRODUCTS
 from conftest import DEFAULT_PRODUCT_TITLE
 import random
 from pages.cart_page import CartPage
-from data.expected_products import EXPECTED_PRODUCTS
-from conftest import DEFAULT_PRODUCT_TITLE
 
 RANDOM_TITLES = random.sample([item[0] for item in EXPECTED_PRODUCTS], 3)
 
@@ -54,7 +52,6 @@ def test_add_multiple_items(logged_in_driver, title_list):
         assert list_page.button_text(title, order="remove") == ListPage.REMOVE_BTN_TEXT
         assert after_cart_count - before_cart_count == 1
     
-
 def test_cart_shows_added_product(cart_had_product_driver):
     # 已经在商品页加购了一个商品，命名为DEFAULT_PRODUCT_TITLE
     # 验证
@@ -79,7 +76,6 @@ def test_cart_shows_added_product(cart_had_product_driver):
         assert item[0] == DEFAULT_PRODUCT_TITLE
         assert item[1] == expect_dict[DEFAULT_PRODUCT_TITLE]
         
-
 def test_cart_product_matches_list_page(cart_had_product_driver):
     list_page = ListPage(cart_had_product_driver)
     products_from_page = list_page.get_card_product_from_page()
@@ -91,6 +87,63 @@ def test_cart_product_matches_list_page(cart_had_product_driver):
 
     assert products_from_cart == products_from_page
 
+def test_cart_badge_matches_row_count(cart_had_product_driver):
+    #
+    list_page = ListPage(cart_had_product_driver)
+    list_page.go_to_cart()
+
+    cart_page = CartPage(cart_had_product_driver)
+    rows_len = len(cart_page.get_all_rows())
+
+    cart_count = cart_page.cart_count()
+
+    assert rows_len == cart_count
+
+def test_remove_item_clears_row(cart_had_product_driver):
+    list_page = ListPage(cart_had_product_driver)
+    list_page.go_to_cart()
+
+    cart_page = CartPage(cart_had_product_driver)
+    before_count = cart_page.cart_count()
+    cart_page.remove_product(DEFAULT_PRODUCT_TITLE)
+
+    assert before_count - cart_page.cart_count() == 1
+
+    assert cart_page.get_row_count() == 0
+
+def test_continue_shopping_returns_to_list(cart_had_product_driver):
+    list_page = ListPage(cart_had_product_driver)
+    list_page.go_to_cart()
+    cart_page = CartPage(cart_had_product_driver)
+    cart_page.click_continue_shopping()
+
+    assert "inventory.html" in cart_had_product_driver.current_url
+
+def test_empty_cart_has_no_rows(logged_in_driver):
+    list_page = ListPage(logged_in_driver)
+    list_page.go_to_cart()
+    cart_page = CartPage(logged_in_driver)
+    assert cart_page.get_row_count() == 0
+
+    assert cart_page.cart_count() == 0
+
+def test_checkout_button_opens_step_one(cart_had_product_driver):
+    list_page = ListPage(cart_had_product_driver)
+    list_page.go_to_cart()
+    cart_page = CartPage(cart_had_product_driver)
+    cart_page.click_checkout()
+
+    assert "checkout-step-one.html" in cart_had_product_driver.current_url
+
+
+
+
+
+    
+
+    
+    
+    
 
 
 
