@@ -4,16 +4,10 @@ from pages.base_page import BasePage
 
 
 def parse_money(text: str) -> float:
-    """把 'Item total: $39.98' 解析成 39.98
-
-    结算页的金额都是「说明文字 + $数字」的格式，所以按 $ 切开取后半段。
-    """
     return float(text.split("$")[-1].replace(",", "").strip())
 
 
 class CheckoutInfoPage(BasePage):
-    """结算第一步：填写收货信息 checkout-step-one.html"""
-
     URL = "https://www.saucedemo.com/checkout-step-one.html"
 
     FIRST_NAME = (By.CSS_SELECTOR, '[data-test="firstName"]')
@@ -39,23 +33,18 @@ class CheckoutInfoPage(BasePage):
                 self._type(locator, value)
 
     def submit_info(self, first_name, last_name, postal_code):
-        """填写并提交，走成功路径：等到第二步页面加载出来"""
         self.fill_info(first_name, last_name, postal_code)
         self._click(self.CONTINUE_BTN)
         self.wait.until(expected_conditions.url_contains("checkout-step-two.html"))
 
     def submit_info_expect_error(self, first_name, last_name, postal_code):
-        """填写并提交，走校验失败路径：等错误提示出现，返回它的文本"""
         self.fill_info(first_name, last_name, postal_code)
         self._click(self.CONTINUE_BTN)
-        # 关键：错误提示是点击之后才被 React 插进 DOM 的，
-        # 不等待就去读，拿到的是空字符串或者直接找不到元素
-        self.wait.until(expected_conditions.visibility_of_element_located(self.ERROR_MSG))
-        return self._text(self.ERROR_MSG)
+        error_element = self.wait.until(expected_conditions.visibility_of_element_located(self.ERROR_MSG))
+        return error_element.text
 
 
 class CheckoutOverviewPage(BasePage):
-    """结算第二步：核对商品与金额 checkout-step-two.html"""
 
     URL = "https://www.saucedemo.com/checkout-step-two.html"
 
@@ -74,14 +63,19 @@ class CheckoutOverviewPage(BasePage):
         return self
 
     def get_row_count(self):
-        # 行数可能为 0，不能用 _get_all_element（它会等 10 秒然后抛超时）
         return len(self.driver.find_elements(*self.PRODUCT_ROW))
+       
 
-    def get_row_names(self):
+    def get_row_titles(self):
         return [element.text for element in self._get_all_element(self.ROW_NAME)]
 
     def get_row_prices(self):
-        return [parse_money(element.text) for element in self._get_all_element(self.ROW_PRICE)]
+
+        row_price = self._get_all_element(self.ROW_PRICE)
+        total_price = []
+        for row in row_price:
+            total_price.append(parse_money(row.text))
+        return total_price
 
     def get_subtotal(self):
         return parse_money(self._text(self.SUBTOTAL))
@@ -99,10 +93,10 @@ class CheckoutOverviewPage(BasePage):
     def click_cancel(self):
         self._click(self.CANCEL_BTN)
         self.wait.until(expected_conditions.url_contains("inventory.html"))
+    
 
 
 class CheckoutCompletePage(BasePage):
-    """结算完成页 checkout-complete.html"""
 
     URL = "https://www.saucedemo.com/checkout-complete.html"
 
