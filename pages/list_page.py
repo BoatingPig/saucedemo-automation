@@ -2,6 +2,7 @@ from pages.base_page import BasePage
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from data.expected_products import EXPECTED_PRODUCTS
 
 class ListPage(BasePage):
@@ -86,13 +87,36 @@ class ListPage(BasePage):
               all(d.execute_script("return arguments[0].complete", img) for img in imges)
         )
 
+    def select_sort_value(self, value):
+        """只选择排序项，不等列表刷新。
+
+        给「预期排序可能不生效」的用例用：正常用例应该用 click_sort_select_value，
+        那里有等待；但如果列表本来就该保持原样，等待一个永远不会发生的变化
+        只会白等满 10 秒，再抛一个和真实原因无关的 TimeoutException。
+        """
+        self._click_select_value(self.SORT_SELECT, value)
+
     def click_sort_select_value(self, value):
         titles_before = self.get_all_products_title()
-        self._click_select_value(self.SORT_SELECT, value)
+        self.select_sort_value(value)
         self.wait.until(
         lambda d: self.get_all_products_title() != titles_before,
         message=f"选择排序 {value} 后商品列表顺序没有变化",
     )
+
+    def sort_order_changed(self, titles_before, timeout=3):
+        """短超时轮询：列表顺序是否已经变了。变了返回 True，没变返回 False。
+
+        和 click_sort_select_value 的区别：那个会等满 10 秒再抛异常，适合
+        「排序一定生效」的正常用例；这个快速返回布尔值，适合「排序可能不生效」的场景。
+        """
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                lambda d: self.get_all_products_title() != titles_before
+            )
+            return True
+        except TimeoutException:
+            return False
 
     def check_sort_products(self, products_list, target="title", order="asc"):
         #判断排序方式
@@ -137,16 +161,25 @@ class ListPage(BasePage):
         self._click(remove_locator)
         self.wait_cart_count(expected)
 
-    def button_text(self, title, order="add"):
+    def _card_button_locator(self, title, order="add"):
+        """卡片上那个按钮的定位器：加购按钮和移除按钮的 data-test 只差前缀。"""
+        slug = title.lower().replace(" ", "-")
         if order == "add":
-            locator = (By.CSS_SELECTOR, f'[data-test="add-to-cart-{title.lower().replace(" ", "-")}"]')
+            return (By.CSS_SELECTOR, f'[data-test="add-to-cart-{slug}"]')
         elif order == "remove":
-            locator = (By.CSS_SELECTOR, f'[data-test="remove-{title.lower().replace(" ", "-")}"]')
-        else:
-            return None
-        btn_text = self._text(locator)
+            return (By.CSS_SELECTOR, f'[data-test="remove-{slug}"]')
+        raise ValueError(f'order 只能是 "add" 或 "remove"，收到 {order!r}')
 
-        return btn_text
+    def click_card_button(self, title, order="add"):
+        """只点卡片上的按钮，不等角标变化。
+
+        给「这个按钮可能根本点不动」的缺陷用例用：add_to_cart 内部会等角标 +1，
+        按钮失效时那条等待会白等满 10 秒，报出来只有一个超时。
+        """
+        self._click(self._card_button_locator(title, order))
+
+    def button_text(self, title, order="add"):
+        return self._text(self._card_button_locator(title, order))
 
     #获取列表页面中已在购物车的商品
     def get_card_product_from_page(self):

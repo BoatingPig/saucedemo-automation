@@ -1,4 +1,5 @@
 import pytest
+import os
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
@@ -25,24 +26,44 @@ DEFAULT_CHECKOUT_INFO = {
 def driver():
     # option用来配置浏览器启动时伴随的行为
     options = Options()
+
+    if os.getenv("HEADLESS") == "1":
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--no-first-run")
+        options.add_argument("--disable-gpu")
+    else:
+        options.add_argument("--window-size=1920,1080")
     # 打开浏览器时进行最大化
-    options.add_argument("--start-maximized")
+
     driver = webdriver.Edge(options=options)
     yield driver
     driver.quit()
 
 
 @pytest.fixture
-def logged_in_driver(driver):
+def logged_in_driver(request, driver):
+    """登录后的 driver，默认用 standard_user。
+
+    换账号的两种方式（都不会影响已有的 44 条用例）：
+      1. 环境变量：SAUCE_USER=problem_user pytest ...
+      2. 参数化 fixture（推荐，因为对照组写在同一个文件里，看得见）：
+         @pytest.mark.parametrize("logged_in_driver", ["problem_user"], indirect=True)
+
+    这里不能挂 params=，否则整个项目会乘以账号数：
+    logged_in_driver 是所有 fixture 的根，它 ×5 等于所有用例 ×5。
+    """
     login_page = LoginPage(driver)
     login_page.open()
-    login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+
+    username = getattr(request, "param", os.getenv("SAUCE_USER", DEFAULT_USERNAME))
+    login_page.login(username, DEFAULT_PASSWORD)
 
     list_page = ListPage(driver)
 
     WebDriverWait(driver, 10).until(expected_conditions.url_contains("inventory.html"))
     list_page.wait_loaded()
-    
+
     return driver
 
 @pytest.fixture
@@ -82,7 +103,6 @@ def cart_with_n_items(request, logged_in_driver):
 
 @pytest.fixture
 def checkout_info_driver(cart_with_n_items):
-    """前置：购物车有商品，并且已经停在结算第一步"""
     list_page = ListPage(cart_with_n_items)
     list_page.go_to_cart()
 
@@ -93,7 +113,6 @@ def checkout_info_driver(cart_with_n_items):
 
 @pytest.fixture
 def checkout_overview_driver(checkout_info_driver):
-    """前置：收货信息已填好，并且已经停在结算第二步"""
     CheckoutInfoPage(checkout_info_driver).submit_info(**DEFAULT_CHECKOUT_INFO)
 
     CheckoutOverviewPage(checkout_info_driver).wait_loaded()

@@ -43,6 +43,18 @@ class CheckoutInfoPage(BasePage):
         error_element = self.wait.until(expected_conditions.visibility_of_element_located(self.ERROR_MSG))
         return error_element.text
 
+    def get_input_values(self):
+        """三个输入框当前的实际内容。
+
+        注意读的是 value 属性，不是 .text：输入框里用户敲进去的内容不进入
+        元素的 innerText，用 .text 会拿到空字符串，看起来像"什么都没填"。
+        """
+        return {
+            "firstName": self.driver.find_element(*self.FIRST_NAME).get_attribute("value"),
+            "lastName": self.driver.find_element(*self.LAST_NAME).get_attribute("value"),
+            "postalCode": self.driver.find_element(*self.POSTAL_CODE).get_attribute("value"),
+        }
+
 
 class CheckoutOverviewPage(BasePage):
 

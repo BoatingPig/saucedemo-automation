@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import TimeoutException
 
 
 class BasePage:
@@ -56,4 +57,20 @@ class BasePage:
             lambda d: self.cart_count() == expected,
             message=f"购物车角标没有变成 {expected}",
         )
+
+    def cart_count_changed(self, before, timeout=3):
+        """短超时轮询：角标是否已经不再是 before。
+
+        变了返回 True，没变返回 False，不抛异常。
+        给「这个动作可能根本没生效」的场景用 —— wait_cart_count 会等满 10 秒再抛
+        TimeoutException，那种失败信息只说明"超时"，说不出业务原因。
+        """
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                lambda d: self.cart_count() != before
+            )
+            return True
+        except TimeoutException:
+            return False
+
         
