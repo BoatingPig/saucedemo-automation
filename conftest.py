@@ -3,7 +3,6 @@ import os
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.edge.options import Options
 from pages.login_page import LoginPage
 from pages.list_page import ListPage
 from pages.cart_page import CartPage
@@ -25,18 +24,33 @@ DEFAULT_CHECKOUT_INFO = {
 @pytest.fixture
 def driver():
     # option用来配置浏览器启动时伴随的行为
-    options = Options()
+    
+    is_ci = os.getenv('CI') == "true"
+    headless = os.getenv("HEADLESS") == "1"
 
-    if os.getenv("HEADLESS") == "1":
+    if is_ci:
+        options = webdriver.ChromeOptions()
+    else:
+        options = webdriver.EdgeOptions()
+
+    if headless:
         options.add_argument("--headless=new")
-        options.add_argument("--window-size=1920,1080")
         options.add_argument("--no-first-run")
         options.add_argument("--disable-gpu")
-    else:
-        options.add_argument("--window-size=1920,1080")
+    if is_ci:
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--headless=new")
+        options.add_argument("--no-first-run")
+        options.add_argument("--disable-gpu")
+    
+    options.add_argument("--window-size=1920,1080")
     # 打开浏览器时进行最大化
 
-    driver = webdriver.Edge(options=options)
+    if is_ci:
+        driver = webdriver.Chrome(options=options)
+    else:
+        driver = webdriver.Edge(options=options)
     yield driver
     driver.quit()
 
