@@ -39,9 +39,23 @@ def pytest_runtest_makereport(item, call):
     if report.when not in ("setup", "call") or not report.failed:
         return
 
+    # 这条用例压根不用浏览器的，没必要为它启动一个
+    if "driver" not in item.fixturenames:
+        return
+
     driver = item.funcargs.get("driver")
     if driver is None:
-        return
+        # setup 阶段失败时 funcargs 是空的：pytest 按 fixturenames 的顺序一个个填，
+        # 用例签名里的第一个 fixture 一抛异常，后面的 driver 就没机会填进去。
+        # 这里改成问 pytest 要——已经建好的 fixture 走缓存，直接返回原实例，
+        # 不会再启动一次浏览器；driver 本身就没建成的话，这里会把异常再抛一次。
+        request = getattr(item, "_request", None)
+        if not request:
+            return
+        try:
+            driver = request.getfixturevalue("driver")
+        except Exception:
+            return
 
     try:
         png = driver.get_screenshot_as_base64()

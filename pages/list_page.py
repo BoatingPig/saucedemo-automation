@@ -150,16 +150,18 @@ class ListPage(BasePage):
     def add_to_cart(self, title):
         # 找到商品对应的card，然后点他的button
         # 根据title去拼接名字
-        expected = self.cart_count() + 1
+        before = self.cart_count()
         add_locator = (By.CSS_SELECTOR, f'[data-test="add-to-cart-{title.lower().replace(" ", "-")}"]')
         self._click(add_locator)
-        self.wait_cart_count(expected)
+        if not self.cart_count_changed(before, timeout=5):
+            raise AssertionError(f"点了 Add to cart，角标还是 {before}，这次点击没生效：{title}")
 
     def remove_from_cart(self, title):
-        expected = self.cart_count() - 1
+        before = self.cart_count()
         remove_locator = (By.CSS_SELECTOR, f'[data-test="remove-{title.lower().replace(" ", "-")}"]')
         self._click(remove_locator)
-        self.wait_cart_count(expected)
+        if not self.cart_count_changed(before, timeout=5):
+            raise AssertionError(f"点了 Remove，角标还是 {before}，这次点击没生效：{title}")
 
     def _card_button_locator(self, title, order="add"):
         """卡片上那个按钮的定位器：加购按钮和移除按钮的 data-test 只差前缀。"""
