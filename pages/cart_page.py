@@ -34,8 +34,16 @@ class CartPage(BasePage):
         self.wait.until(expected_conditions.url_contains("inventory.html"))
 
     def click_checkout(self):
+        before_url = self.driver.current_url
         self._click(self.CHECKOUT_BTN)
-        self.wait.until(expected_conditions.url_contains("checkout-step-one.html"))
+        try:
+            self.wait.until(expected_conditions.url_contains("checkout-step-one.html"))
+        except TimeoutError :
+            after_url = self.driver.current_url
+            print("yhy checkout timeout")
+            print(f"befor_url = {before_url}")
+            print(f"after_url = {after_url}")
+
 
     def get_row_count(self):
         return len(self.driver.find_elements(*self.PRODUCT_ROW))

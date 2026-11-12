@@ -1,5 +1,6 @@
 import pytest
 import os
+from pytest_html import extras
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
@@ -20,6 +21,38 @@ DEFAULT_CHECKOUT_INFO = {
     "last_name": "Zhang",
     "postal_code": "100000",
 }
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """用例失败时截图，直接嵌进 HTML 报告。
+
+    为什么不写在 driver fixture 的 yield 之后：
+    1. makereport 在「阶段结束时」触发，此时 driver 还活着（teardown 还没跑）
+    2. setup 阶段就挂的用例（比如前置 fixture 建不起来）走不到 yield 之后
+    3. 写在这里能同时覆盖 setup 失败和 call 失败，且不影响任何用例逻辑
+    """
+    outcome = yield
+    report = outcome.get_result()
+
+    # teardown 阶段 driver 已经 quit，截不了；只处理 setup / call
+    if report.when not in ("setup", "call") or not report.failed:
+        return
+
+    driver = item.funcargs.get("driver")
+    if driver is None:
+        return
+
+    try:
+        png = driver.get_screenshot_as_base64()
+    except Exception:
+        # 截图本身失败不能把报告搞挂，静默跳过
+        return
+
+    if not hasattr(report, "extras"):
+        report.extras = []
+    report.extras.append(extras.image(png, mime_type="image/png"))
+
 
 @pytest.fixture
 def driver():

@@ -24,4 +24,15 @@ jobs:
      run: pip install -r requirements.txt
 
    - name: 运行测试
-     run: python -m pytest tests/
+     run: |
+       mkdir -p reports
+       python -m pytest tests/ --html=reports/report.html --self-contained-html
+
+   - name: 上传测试报告
+     if: always()
+     uses: actions/upload-artifact@v4
+     with:
+       name: pytest-report
+       path: reports/
+       retention-days: 14
+       if-no-files-found: ignore
